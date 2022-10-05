@@ -14,6 +14,13 @@ class _PlayScreenState extends State<PlayScreen> {
   double x = 75;
   double y = 75;
 
+  double _findNearest50(double number) {
+    final quotient = number / 50;
+    final res = quotient.round() * 50;
+
+    return number < res ? res - 25 : res + 25;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,6 +36,8 @@ class _PlayScreenState extends State<PlayScreen> {
         onPanEnd: (details) {
           setState(() {
             _isClicked = false;
+            x = _findNearest50(x);
+            y = _findNearest50(y);
           });
         },
         onPanUpdate: (details) {
