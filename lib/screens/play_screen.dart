@@ -25,36 +25,45 @@ class _PlayScreenState extends State<PlayScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(),
-      body: GestureDetector(
-        onPanStart: (details) {
-          setState(() {
-            _isClicked = true;
-            x = details.localPosition.dx;
-            y = details.localPosition.dy;
-          });
-        },
-        onPanEnd: (details) {
-          setState(() {
-            _isClicked = false;
-            x = _findNearest50(x);
-            y = _findNearest50(y);
-          });
-        },
-        onPanUpdate: (details) {
-          if (_isClicked) {
+      body: Center(
+        child: GestureDetector(
+          onPanStart: (details) {
             setState(() {
-              x += details.delta.dx;
-              y += details.delta.dy;
+              _isClicked = true;
+              x = details.localPosition.dx;
+              y = details.localPosition.dy;
             });
-          }
-        },
-        child: Container(
-          width: MediaQuery.of(context).size.width,
-          height: MediaQuery.of(context).size.height,
-          color: Colors.white,
-          child: CustomPaint(
-            painter: MyGridPainter(),
-            foregroundPainter: ShipPainter(x, y),
+          },
+          onPanEnd: (details) {
+            setState(() {
+              _isClicked = false;
+
+              // Prevent to put ship outside grid.
+              if (x > 500) x = 475;
+              if (y > 500) y = 475;
+              if (x < 0) x = 25;
+              if (y < 0) y = 25;
+
+              x = _findNearest50(x);
+              y = _findNearest50(y);
+            });
+          },
+          onPanUpdate: (details) {
+            if (_isClicked) {
+              setState(() {
+                x += details.delta.dx;
+                y += details.delta.dy;
+              });
+            }
+          },
+          child: Container(
+            width: 500,
+            height: 500,
+            color: Colors.white,
+            child: CustomPaint(
+              painter: MyGridPainter(),
+              foregroundPainter: ShipPainter(x, y),
+            ),
           ),
         ),
       ),
