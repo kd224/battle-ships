@@ -12,26 +12,26 @@ class PlayScreen extends StatefulWidget {
 
 class _PlayScreenState extends State<PlayScreen> {
   late int? _shipId;
-  double x = 0.0;
-  double y = 0.0;
+  double l = 0.0;
+  double t = 0.0;
 
   final Map<int, Map<String, dynamic>> _ships = {
-    1: {'x': 25.0, 'y': 125.0},
-    2: {'x': 125.0, 'y': 75.0},
-    3: {'x': 225.0, 'y': 75.0},
+    1: {'l': 50.0, 't': 50.0, 'w': 50.0, 'h': 200.0},
+    2: {'l': 150.0, 't': 50.0, 'w': 50.0, 'h': 150.0},
+    3: {'l': 250.0, 't': 50.0, 'w': 150.0, 'h': 50.0},
   };
 
   double _findNearest50(double number) {
     final quotient = number / 50;
     final res = quotient.round() * 50;
 
-    return number < res ? res - 25 : res + 25;
+    return res.toDouble();
   }
 
   void _savePosition() {
     if (_shipId != null) {
-      _ships[_shipId]!['x'] = x;
-      _ships[_shipId]!['y'] = y;
+      _ships[_shipId]!['l'] = l;
+      _ships[_shipId]!['t'] = t;
     }
   }
 
@@ -48,33 +48,37 @@ class _PlayScreenState extends State<PlayScreen> {
                 details.localPosition.dx,
                 details.localPosition.dy,
               ),
-              width: 50,
-              height: 50,
+              width: 3,
+              height: 3,
             );
 
             _shipId = _ships.keys.firstWhereOrNull((e) {
-              final x = _ships[e]?['x'] as double;
-              final y = _ships[e]?['y'] as double;
+              final l = _ships[e]?['l'] as double;
+              final t = _ships[e]?['t'] as double;
+              final w = _ships[e]?['w'] as double;
+              final h = _ships[e]?['h'] as double;
 
-              return myReact.contains(Offset(x, y));
+              final newRect = Rect.fromLTWH(l, t, w, h);
+
+              return myReact.overlaps(newRect);
             });
 
             setState(() {
-              x = details.localPosition.dx;
-              y = details.localPosition.dy;
+              l = details.localPosition.dx - (_ships[_shipId]!['w'] / 2);
+              t = details.localPosition.dy - (_ships[_shipId]!['h'] / 2);
             });
           },
           onPanEnd: (details) {
             setState(() {
               // Prevent to put ship outside grid.
-              if (x > 500) x = 475;
-              if (y > 500) y = 475;
-              if (x < 0) x = 25;
-              if (y < 0) y = 25;
+              if (l > 500) l = (500 - _ships[_shipId]!['w']).toDouble();
+              if (t > 500) t = (500 - _ships[_shipId]!['h']).toDouble();
+              if (l < 0) l = 0;
+              if (t < 0) t = 0;
 
               // Attract ship to center of a tile.
-              x = _findNearest50(x);
-              y = _findNearest50(y);
+              l = _findNearest50(l);
+              t = _findNearest50(t);
 
               _savePosition();
 
@@ -83,8 +87,8 @@ class _PlayScreenState extends State<PlayScreen> {
           },
           onPanUpdate: (details) {
             setState(() {
-              x += details.delta.dx;
-              y += details.delta.dy;
+              l += details.delta.dx;
+              t += details.delta.dy;
 
               _savePosition();
             });

@@ -8,14 +8,13 @@ class ShipPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (final key in ships.keys) {
-      final x = ships[key]!['x'] as double;
-      final y = ships[key]!['y'] as double;
+      final l = ships[key]!['l'] as double;
+      final t = ships[key]!['t'] as double;
+      final w = ships[key]!['w'] as double;
+      final h = ships[key]!['h'] as double;
+
       canvas.drawRect(
-        Rect.fromCenter(
-          center: Offset(x, y),
-          width: 50,
-          height: 50,
-        ),
+        Rect.fromLTWH(l, t, w, h),
         Paint()..color = Colors.blue,
       );
     }
