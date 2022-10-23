@@ -14,11 +14,12 @@ class _PlayScreenState extends State<PlayScreen> {
   late int? _shipId;
   double l = 0.0;
   double t = 0.0;
+  Map<int, int> misalignedShips = {};
 
   final Map<int, Map<String, dynamic>> _ships = {
-    1: {'l': 50.0, 't': 50.0, 'w': 50.0, 'h': 200.0},
-    2: {'l': 150.0, 't': 50.0, 'w': 50.0, 'h': 150.0},
-    3: {'l': 250.0, 't': 50.0, 'w': 150.0, 'h': 50.0},
+    1: {'l': 50.0, 't': 50.0, 'w': 50.0, 'h': 200.0, 'isMisaligned': false},
+    2: {'l': 150.0, 't': 50.0, 'w': 50.0, 'h': 150.0, 'isMisaligned': false},
+    3: {'l': 250.0, 't': 50.0, 'w': 150.0, 'h': 50.0, 'isMisaligned': false},
   };
 
   double _findNearest50(double number) {
@@ -33,6 +34,15 @@ class _PlayScreenState extends State<PlayScreen> {
       _ships[_shipId]!['l'] = l;
       _ships[_shipId]!['t'] = t;
     }
+  }
+
+  Rect _constructShip(Map<String, dynamic>? ship) {
+    final l = ship?['l'] as double;
+    final t = ship?['t'] as double;
+    final w = ship?['w'] as double;
+    final h = ship?['h'] as double;
+
+    return Rect.fromLTWH(l, t, w, h);
   }
 
   @override
@@ -53,12 +63,7 @@ class _PlayScreenState extends State<PlayScreen> {
             );
 
             _shipId = _ships.keys.firstWhereOrNull((e) {
-              final l = _ships[e]?['l'] as double;
-              final t = _ships[e]?['t'] as double;
-              final w = _ships[e]?['w'] as double;
-              final h = _ships[e]?['h'] as double;
-
-              final newRect = Rect.fromLTWH(l, t, w, h);
+              final newRect = _constructShip(_ships[e]);
 
               return myReact.overlaps(newRect);
             });
@@ -81,6 +86,35 @@ class _PlayScreenState extends State<PlayScreen> {
               t = _findNearest50(t);
 
               _savePosition();
+
+              // Detecting if ship is placed in wrong place:
+              //
+              // Each ship must have one square space from other ships, otherwise it is misaligned.
+              // So we artificially enlarge each ship one square in each side.
+              // If the enlarged ship touches or runs over another ship, it is wrongly positioned.
+              List<int> occuredKeys = [];
+              for (final a in _ships.keys) {
+                final enlargedShip = _constructShip(_ships[a]).inflate(50);
+
+                for (final b in _ships.keys) {
+                  if (b != a && b > a) {
+                    final otherShip = _constructShip(_ships[b]);
+                    if (enlargedShip.overlaps(otherShip)) {
+                      _ships[a]!['isMisaligned'] = true;
+                      _ships[b]!['isMisaligned'] = true;
+                    } else {
+                      if (!occuredKeys.contains(a)) {
+                        _ships[a]!['isMisaligned'] = false;
+                      }
+                      if (!occuredKeys.contains(b)) {
+                        _ships[b]!['isMisaligned'] = false;
+                      }
+                    }
+
+                    occuredKeys.addAll([a, b]);
+                  }
+                }
+              }
 
               _shipId = null;
             });

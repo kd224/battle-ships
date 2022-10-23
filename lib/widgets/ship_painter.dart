@@ -12,10 +12,11 @@ class ShipPainter extends CustomPainter {
       final t = ships[key]!['t'] as double;
       final w = ships[key]!['w'] as double;
       final h = ships[key]!['h'] as double;
+      final isMisaligned = ships[key]!['isMisaligned'] as bool;
 
       canvas.drawRect(
         Rect.fromLTWH(l, t, w, h),
-        Paint()..color = Colors.blue,
+        Paint()..color = !isMisaligned ? Colors.blue : Colors.red,
       );
     }
   }
