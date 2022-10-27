@@ -1,28 +1,30 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:flutter/painting.dart';
+
 class Ship {
-  final int id;
-  final double x;
-  final double y;
-  final int squares;
+  int id;
+  Rect rect;
+  bool isMisaligned;
 
-  Ship(this.id, this.x, this.y, this.squares);
-
-  @override
-  String toString() {
-    return 'Ship(id: $id, x: $x, y: $y, squares: $squares)';
-  }
+  Ship({
+    required this.id,
+    required this.rect,
+    this.isMisaligned = false,
+  });
 
   Ship copyWith({
     int? id,
-    double? x,
-    double? y,
-    int? squares,
+    Rect? rect,
+    bool? isMisaligned,
   }) {
     return Ship(
-      id ?? this.id,
-      x ?? this.x,
-      y ?? this.y,
-      squares ?? this.squares,
+      id: id ?? this.id,
+      rect: rect ?? this.rect,
+      isMisaligned: isMisaligned ?? this.isMisaligned,
     );
   }
+
+  @override
+  String toString() =>
+      'Ship(id: $id, rect: $rect, isMisaligned: $isMisaligned)';
 }

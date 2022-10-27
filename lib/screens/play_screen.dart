@@ -1,3 +1,4 @@
+import 'package:battle_ships/models/ship.dart';
 import 'package:battle_ships/widgets/grid_painter.dart';
 import 'package:battle_ships/widgets/ship_painter.dart';
 import 'package:flutter/material.dart';
@@ -11,16 +12,16 @@ class PlayScreen extends StatefulWidget {
 }
 
 class _PlayScreenState extends State<PlayScreen> {
-  late int? _shipId;
+  late Ship? _currentShip;
   double l = 0.0;
   double t = 0.0;
   Map<int, int> misalignedShips = {};
 
-  final Map<int, Map<String, dynamic>> _ships = {
-    1: {'l': 50.0, 't': 50.0, 'w': 50.0, 'h': 200.0, 'isMisaligned': false},
-    2: {'l': 150.0, 't': 50.0, 'w': 50.0, 'h': 150.0, 'isMisaligned': false},
-    3: {'l': 250.0, 't': 50.0, 'w': 150.0, 'h': 50.0, 'isMisaligned': false},
-  };
+  final List<Ship> _ships = [
+    Ship(id: 1, rect: const Rect.fromLTWH(50, 50, 50, 200)),
+    Ship(id: 2, rect: const Rect.fromLTWH(150, 50, 50, 150)),
+    Ship(id: 3, rect: const Rect.fromLTWH(250, 50, 150, 50)),
+  ];
 
   double _findNearest50(double number) {
     final quotient = number / 50;
@@ -30,19 +31,12 @@ class _PlayScreenState extends State<PlayScreen> {
   }
 
   void _savePosition() {
-    if (_shipId != null) {
-      _ships[_shipId]!['l'] = l;
-      _ships[_shipId]!['t'] = t;
+    if (_currentShip != null) {
+      final ship = _ships.firstWhere((e) => e.id == _currentShip!.id);
+
+      final newRect = Rect.fromLTWH(l, t, ship.rect.width, ship.rect.height);
+      _ships.firstWhere((e) => e.id == _currentShip!.id).rect = newRect;
     }
-  }
-
-  Rect _constructShip(Map<String, dynamic>? ship) {
-    final l = ship?['l'] as double;
-    final t = ship?['t'] as double;
-    final w = ship?['w'] as double;
-    final h = ship?['h'] as double;
-
-    return Rect.fromLTWH(l, t, w, h);
   }
 
   @override
@@ -53,7 +47,7 @@ class _PlayScreenState extends State<PlayScreen> {
         child: GestureDetector(
           onPanStart: (details) {
             // A way to find id of currently chosen ship.
-            Rect myReact = Rect.fromCenter(
+            Rect myRect = Rect.fromCenter(
               center: Offset(
                 details.localPosition.dx,
                 details.localPosition.dy,
@@ -62,22 +56,20 @@ class _PlayScreenState extends State<PlayScreen> {
               height: 3,
             );
 
-            _shipId = _ships.keys.firstWhereOrNull((e) {
-              final newRect = _constructShip(_ships[e]);
-
-              return myReact.overlaps(newRect);
-            });
+            _currentShip = _ships.firstWhereOrNull(
+              (e) => myRect.overlaps(e.rect),
+            );
 
             setState(() {
-              l = details.localPosition.dx - (_ships[_shipId]!['w'] / 2);
-              t = details.localPosition.dy - (_ships[_shipId]!['h'] / 2);
+              l = details.localPosition.dx - _currentShip!.rect.width / 2;
+              t = details.localPosition.dy - _currentShip!.rect.height / 2;
             });
           },
           onPanEnd: (details) {
             setState(() {
               // Prevent to put ship outside grid.
-              if (l > 500) l = (500 - _ships[_shipId]!['w']).toDouble();
-              if (t > 500) t = (500 - _ships[_shipId]!['h']).toDouble();
+              if (l > 500) l = (500 - _currentShip!.rect.width);
+              if (t > 500) t = (500 - _currentShip!.rect.height);
               if (l < 0) l = 0;
               if (t < 0) t = 0;
 
@@ -93,30 +85,32 @@ class _PlayScreenState extends State<PlayScreen> {
               // So we artificially enlarge each ship one square in each side.
               // If the enlarged ship touches or runs over another ship, it is wrongly positioned.
               List<int> occuredKeys = [];
-              for (final a in _ships.keys) {
-                final enlargedShip = _constructShip(_ships[a]).inflate(50);
+              for (final a in _ships) {
+                final enlargedShip = a.rect.inflate(50);
+                final shipA = _ships.firstWhere((e) => e.id == a.id);
 
-                for (final b in _ships.keys) {
-                  if (b != a && b > a) {
-                    final otherShip = _constructShip(_ships[b]);
-                    if (enlargedShip.overlaps(otherShip)) {
-                      _ships[a]!['isMisaligned'] = true;
-                      _ships[b]!['isMisaligned'] = true;
+                for (final b in _ships) {
+                  if (b.id != a.id && b.id > a.id) {
+                    final shipB = _ships.firstWhere((e) => e.id == b.id);
+
+                    if (enlargedShip.overlaps(b.rect)) {
+                      shipA.isMisaligned = true;
+                      shipB.isMisaligned = true;
                     } else {
-                      if (!occuredKeys.contains(a)) {
-                        _ships[a]!['isMisaligned'] = false;
+                      if (!occuredKeys.contains(a.id)) {
+                        shipA.isMisaligned = false;
                       }
-                      if (!occuredKeys.contains(b)) {
-                        _ships[b]!['isMisaligned'] = false;
+                      if (!occuredKeys.contains(b.id)) {
+                        shipB.isMisaligned = false;
                       }
                     }
 
-                    occuredKeys.addAll([a, b]);
+                    occuredKeys.addAll([a.id, b.id]);
                   }
                 }
               }
 
-              _shipId = null;
+              _currentShip = null;
             });
           },
           onPanUpdate: (details) {
