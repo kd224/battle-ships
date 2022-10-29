@@ -49,4 +49,4 @@ app.*.map.json
 # Android related
 **/android/key.properties
 
-lib/test.dart
+lib/test
