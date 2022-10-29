@@ -12,7 +12,7 @@ class PlayScreen extends StatefulWidget {
 }
 
 class _PlayScreenState extends State<PlayScreen> {
-  late Ship? _currentShip;
+  Ship? _currentShip;
   double l = 0.0;
   double t = 0.0;
   Map<int, int> misalignedShips = {};
@@ -23,6 +23,39 @@ class _PlayScreenState extends State<PlayScreen> {
     Ship(id: 3, rect: const Rect.fromLTWH(250, 50, 150, 50)),
   ];
 
+  // Detecting if ship is placed in wrong place:
+  //
+  // Each ship must have one square space from other ships, otherwise it is misaligned.
+  // So we artificially enlarge each ship one square in each side.
+  // If the enlarged ship touches or runs over another ship, it is wrongly positioned.
+  void _detectMisplacedShips() {
+    List<int> occuredKeys = [];
+    for (final a in _ships) {
+      final enlargedShip = a.rect.inflate(50);
+      final shipA = _ships.firstWhere((e) => e.id == a.id);
+
+      for (final b in _ships) {
+        if (b.id != a.id && b.id > a.id) {
+          final shipB = _ships.firstWhere((e) => e.id == b.id);
+
+          if (enlargedShip.overlaps(b.rect)) {
+            shipA.isMisaligned = true;
+            shipB.isMisaligned = true;
+          } else {
+            if (!occuredKeys.contains(a.id)) {
+              shipA.isMisaligned = false;
+            }
+            if (!occuredKeys.contains(b.id)) {
+              shipB.isMisaligned = false;
+            }
+          }
+
+          occuredKeys.addAll([a.id, b.id]);
+        }
+      }
+    }
+  }
+
   double _findNearest50(double number) {
     final quotient = number / 50;
     final res = quotient.round() * 50;
@@ -30,13 +63,31 @@ class _PlayScreenState extends State<PlayScreen> {
     return res.toDouble();
   }
 
-  void _savePosition() {
+  void _savePosition({double? width, double? height}) {
     if (_currentShip != null) {
       final ship = _ships.firstWhere((e) => e.id == _currentShip!.id);
 
-      final newRect = Rect.fromLTWH(l, t, ship.rect.width, ship.rect.height);
+      final newRect = Rect.fromLTWH(
+        l,
+        t,
+        width ?? ship.rect.width,
+        height ?? ship.rect.height,
+      );
       _ships.firstWhere((e) => e.id == _currentShip!.id).rect = newRect;
     }
+  }
+
+  // A way to find id of currently chosen ship.
+  Ship? _findShipId(double x, double y) {
+    Rect myRect = Rect.fromCenter(
+      center: Offset(x, y),
+      width: 3,
+      height: 3,
+    );
+
+    return _ships.firstWhereOrNull(
+      (e) => myRect.overlaps(e.rect),
+    );
   }
 
   @override
@@ -46,18 +97,9 @@ class _PlayScreenState extends State<PlayScreen> {
       body: Center(
         child: GestureDetector(
           onPanStart: (details) {
-            // A way to find id of currently chosen ship.
-            Rect myRect = Rect.fromCenter(
-              center: Offset(
-                details.localPosition.dx,
-                details.localPosition.dy,
-              ),
-              width: 3,
-              height: 3,
-            );
-
-            _currentShip = _ships.firstWhereOrNull(
-              (e) => myRect.overlaps(e.rect),
+            _currentShip = _findShipId(
+              details.localPosition.dx,
+              details.localPosition.dy,
             );
 
             setState(() {
@@ -79,36 +121,7 @@ class _PlayScreenState extends State<PlayScreen> {
 
               _savePosition();
 
-              // Detecting if ship is placed in wrong place:
-              //
-              // Each ship must have one square space from other ships, otherwise it is misaligned.
-              // So we artificially enlarge each ship one square in each side.
-              // If the enlarged ship touches or runs over another ship, it is wrongly positioned.
-              List<int> occuredKeys = [];
-              for (final a in _ships) {
-                final enlargedShip = a.rect.inflate(50);
-                final shipA = _ships.firstWhere((e) => e.id == a.id);
-
-                for (final b in _ships) {
-                  if (b.id != a.id && b.id > a.id) {
-                    final shipB = _ships.firstWhere((e) => e.id == b.id);
-
-                    if (enlargedShip.overlaps(b.rect)) {
-                      shipA.isMisaligned = true;
-                      shipB.isMisaligned = true;
-                    } else {
-                      if (!occuredKeys.contains(a.id)) {
-                        shipA.isMisaligned = false;
-                      }
-                      if (!occuredKeys.contains(b.id)) {
-                        shipB.isMisaligned = false;
-                      }
-                    }
-
-                    occuredKeys.addAll([a.id, b.id]);
-                  }
-                }
-              }
+              _detectMisplacedShips();
 
               _currentShip = null;
             });
@@ -120,6 +133,33 @@ class _PlayScreenState extends State<PlayScreen> {
 
               _savePosition();
             });
+          },
+          onDoubleTapDown: (details) {
+            // Changing ship axis orientation.
+            _currentShip = _findShipId(
+              details.localPosition.dx,
+              details.localPosition.dy,
+            );
+
+            if (_currentShip != null) {
+              setState(() {
+                l = _currentShip!.rect.left;
+                t = _currentShip!.rect.top;
+
+                // Swaping width with height.
+                _savePosition(
+                  width: _currentShip?.rect.height,
+                  height: _currentShip?.rect.width,
+                );
+
+                _detectMisplacedShips();
+              });
+            }
+
+            _currentShip = null;
+          },
+          onDoubleTap: () {
+            // https://stackoverflow.com/questions/63228704/get-details-on-doubletap-on-flutter-gesturedetector
           },
           child: Container(
             width: 500,
