@@ -46,4 +46,7 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-/lib/test
+# Android related
+**/android/key.properties
+
+lib/test.dart
