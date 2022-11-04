@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:battle_ships/models/ship.dart';
 import 'package:battle_ships/widgets/grid_painter.dart';
 import 'package:battle_ships/widgets/ship_painter.dart';
@@ -18,10 +20,83 @@ class _PlayScreenState extends State<PlayScreen> {
   Map<int, int> misalignedShips = {};
 
   final List<Ship> _ships = [
-    Ship(id: 1, rect: const Rect.fromLTWH(50, 50, 50, 200)),
-    Ship(id: 2, rect: const Rect.fromLTWH(150, 50, 50, 150)),
-    Ship(id: 3, rect: const Rect.fromLTWH(250, 50, 150, 50)),
+    Ship(id: 1, rect: const Rect.fromLTWH(-50, -50, 50, 200)),
+    Ship(id: 2, rect: const Rect.fromLTWH(-50, -50, 50, 150)),
+    Ship(id: 3, rect: const Rect.fromLTWH(-50, -50, 50, 150)),
+    Ship(id: 4, rect: const Rect.fromLTWH(-50, -50, 50, 100)),
+    Ship(id: 5, rect: const Rect.fromLTWH(-50, -50, 50, 100)),
+    Ship(id: 6, rect: const Rect.fromLTWH(-50, -50, 50, 100)),
+    Ship(id: 7, rect: const Rect.fromLTWH(-50, -50, 50, 50)),
+    Ship(id: 8, rect: const Rect.fromLTWH(-50, -50, 50, 50)),
+    Ship(id: 9, rect: const Rect.fromLTWH(-50, -50, 50, 50)),
+    Ship(id: 10, rect: const Rect.fromLTWH(-50, -50, 50, 50)),
   ];
+
+  bool _isOverlap(Ship ship) {
+    final enlargedShip = ship.rect.inflate(50);
+    bool isOverlap = false;
+
+    for (final theShip in _ships) {
+      if (ship.id != theShip.id && theShip.id < ship.id) {
+        if (enlargedShip.overlaps(theShip.rect)) {
+          isOverlap = true;
+          break;
+        }
+      }
+    }
+
+    return isOverlap;
+  }
+
+  int _getRandomNumber(int max) {
+    const min = 0;
+
+    return min + Random().nextInt(max - min);
+  }
+
+  int _getMaxNumber(double len) {
+    if (len > 50) {
+      if (len == 200) {
+        return 6;
+      } else if (len == 150) {
+        return 7;
+      } else if (len == 100) {
+        return 8;
+      }
+    } else {
+      return 9;
+    }
+
+    return 9;
+  }
+
+  void _placeRandom(Ship ship) {
+    double w, h;
+    final rand = _getRandomNumber(2);
+
+    if (rand == 1) {
+      w = ship.rect.width;
+      h = ship.rect.height;
+    } else {
+      h = ship.rect.width;
+      w = ship.rect.height;
+    }
+    final l = _getRandomNumber(_getMaxNumber(w)) * 50.0;
+    final t = _getRandomNumber(_getMaxNumber(h)) * 50.0;
+
+    final newRect = Rect.fromLTWH(l, t, w, h);
+    ship.rect = newRect;
+  }
+
+  void _shuffleShips() {
+    for (final ship in _ships) {
+      _placeRandom(ship);
+
+      while (_isOverlap(ship)) {
+        _placeRandom(ship);
+      }
+    }
+  }
 
   // Detecting if ship is placed in wrong place:
   //
@@ -88,6 +163,12 @@ class _PlayScreenState extends State<PlayScreen> {
     return _ships.firstWhereOrNull(
       (e) => myRect.overlaps(e.rect),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _shuffleShips();
   }
 
   @override
