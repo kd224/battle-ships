@@ -151,8 +151,10 @@ class ShipRepository {
   void onStart(double x, double y) {
     currentShip = findCurrentShip(x, y);
 
-    l = x - currentShip!.rect.width / 2;
-    t = y - currentShip!.rect.height / 2;
+    if (currentShip != null) {
+      l = x - currentShip!.rect.width / 2;
+      t = y - currentShip!.rect.height / 2;
+    }
   }
 
   void onUpdate(double x, double y) {
